@@ -1,0 +1,71 @@
+select distinct top 100
+BE.BE_NAME AS "Billing Entity",
+FE.PFT_ENCNTR_ALIAS as"Encounter Number",
+AC.EXT_acct_ID_TXT as"Account Number",
+AC.EXT_acct_ID_TXT as"MRN",
+P.NAME_FULL_FORMATTED AS "Patient Name",
+P.BIRTH_DATE AS"Date of Birth",
+cv3.display as "Gender",
+A.STREET_ADDR as "Street Address Line 1",
+A.STREET_ADDR2 AS "Street Address Line 2",
+A.CITY AS "City",
+A.STATE AS "State",
+A.ZIPCODE AS "Zip Code",
+FE.REG_DT_TM as"Registration Date",
+FE.DISCH_DT_TM as"Discharge Date",
+bob.PRIORITY_SEQ as"Responsible Priority Sequence",
+FE.TOTAL_CHARGE_AMOUNT as"Total Charge Amount",
+FE.TOTAL_APPLIED_PAYMENT_AMOUNT as"Total Payment Amount",
+FE.TOTAL_ADJUSTMENT_AMOUNT as"Total Adjustment Amount",
+FE.PAT_BAL_FWD as "Self-Pay Balance",
+FE.CURRENT_BALANCE as"Balance Amount",
+FE.LAST_PAYMENT_DT_TM as"Last Payment Date",
+FE.ZERO_BALANCE_DT_TM as"Encounter Zero Balance Date",
+cv6.display as "Claim Status",
+cv1.display as "Encounter Type Class",
+cv2.display as "Encounter Type",
+cv7.display as "Hold Reason",
+LC.Display as "Facility Name", 
+ LC1.Display as "Location",
+CV4.Display as"Medical Service",
+case when DATEDIFF(Day,FE.DISCH_DT_TM,getdate()) between 0 and 30 then '0-30'
+					   when DATEDIFF(Day,FE.DISCH_DT_TM,getdate()) between 31 and 60 then '31-60'
+					   when DATEDIFF(Day,FE.DISCH_DT_TM,getdate()) between 61 and 90 then '61-90'
+					   when DATEDIFF(Day,FE.DISCH_DT_TM,getdate()) between 91 and 120 then '91-120'
+					   when DATEDIFF(Day,FE.DISCH_DT_TM,getdate()) between 121 and 150 then '121-150'
+					   when DATEDIFF(Day,FE.DISCH_DT_TM,getdate()) between 151 and 180 then '151-180'
+					   else '181-Up' END as "Discharge Aging Range",
+
+
+CV5.Display as"Responsible Financial Class",
+BOB.ORIG_BILL_DT_TM as"First Claim Generation Date",
+BOB.LAST_BILLED_DT_TM as"Last Claim Generation Date",
+BOB.ORIG_BILL_SUBMIT_DT_TM as "First Claim Submission Date",
+BOB.ORIG_BILL_TRANSMIT_DT_TM as "First Claim Transmission Date",
+B.SUBMIT_DT_TM as "Last Claim Submission Date",
+B.TRANSMISSION_DT_TM as "Last Claim Transmission Date",
+Getdate() as "Created Date",
+DATEADD(day, -2, GETDATE()) as "Activity Date"
+--cv3.display as "Statement Cycle",
+from FINANCIAL_ENCOUNTER FE
+left join Encounter E on FE.ENCNTR_ID = E.ENCNTR_ID
+left join billing_entity BE on bE.Billing_entity_id = fE.Billing_entity_id
+LEFT JOIN ORGANIZATION O ON O.ORGANIZATION_ID = BE.ORGANIZATION_ID
+left join address a on a.parent_entity_id = O.ORGANIZATION_ID
+left join LOCATION LC on LC.location_ID = E.LOC_FACILITY_ID
+left join LOCATION LC1 on LC1.location_ID = E.LOC_BUILDING_ID
+left join Account AC on ac.ACCT_id = FE.ACCT_ID
+left join person P on p.person_ID = E.person_id
+left join code_value CV1 on cv1.code_value = E.ENCNTR_TYPE_CLASS_CD
+left join code_value CV2 on cv2.code_value = E.ENCNTR_TYPE_CD
+left join code_value CV3 on cv3.code_value = p.SEX_CD
+left join code_value CV4 on cv4.code_value = E.MED_SERVICE_CD
+left join code_value CV5 on cv5.code_value = E.FINANCIAL_CLASS_CD
+left join BENEFIT_ORDER_BALANCE BOB ON BOB.PFT_ENCNTR_ID = FE.PFT_ENCNTR_ID
+left join denial d on d.benefit_order_id = bob.benefit_order_id
+left join bill b on b.corsp_activity_id = d.corsp_activity_id
+left join code_value CV6 on CV6.code_value = B.Bill_Status_CD
+left join holds h on h.pft_encntr_id = fe.pft_encntr_id
+left join code_value cv7 on cv7.code_value = h.pe_status_reason_cd
+
+
